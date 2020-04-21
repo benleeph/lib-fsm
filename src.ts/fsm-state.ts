@@ -2,8 +2,8 @@ import { FsmEvent } from './fsm-event';
 
 export class FsmState {
 
-    private _initialStateRegionName: string = null;
-    private _transitionTable: Map<FsmEvent, FsmState> = null;
+    private _initialStateRegionName: string | null = null;
+    private _transitionTable: Map<FsmEvent, FsmState> | null = null;
 
     constructor(private readonly _fsmName: string, private readonly _stateId: number, private readonly _stateName: string, private _isFinalState: boolean = false) {
         this._transitionTable = this._isFinalState ? null : new Map<FsmEvent, FsmState>();
@@ -21,7 +21,7 @@ export class FsmState {
         return this._stateName;
     }
 
-    equals(otherState: FsmState) {
+    equals(otherState?: FsmState) {
         if (otherState) {
             return (this._stateId === otherState.stateId && this._stateName === otherState.stateName);
         }
@@ -93,12 +93,12 @@ export class FsmState {
     }
 
     nextState(onEvent: FsmEvent): FsmState | null {
-        if (this._isFinalState) { return null; }
+        if (this._isFinalState || !this._transitionTable) { return null; }
         return this._transitionTable.get(onEvent) || null;
     }
 
     hasNextStateOnEvent(onEvent: FsmEvent, nextState: FsmState) {
-        if (!onEvent || !nextState) { return false; }
+        if (!this._transitionTable || !onEvent || !nextState) { return false; }
         return nextState.equals(this._transitionTable.get(onEvent));
     }
 
@@ -107,7 +107,7 @@ export class FsmState {
     }
 
     hasNextTransition(nextState: FsmState) {
-        if (!nextState) { return false; }
+        if (!this._transitionTable || !nextState) { return false; }
 
         this._transitionTable.forEach((state) => {
             if (state.equals(nextState)) { return true; }
