@@ -2,10 +2,10 @@ import { FsmState } from "./fsm-state";
 import { FsmEvent } from "./fsm-event";
 
 export interface FSMListener {
-    onNewState(fsmName: string, initialState: FsmState);
-    onStateTransition(fsmName: string, onEvent: FsmEvent, oldState: FsmState, newState: FsmState);
-    onInvalidStateTransition(fsmName: string, onEvent: FsmEvent, currentState: FsmState);
-    onEventAfterFinalState(fsmName: string, onEvent: FsmEvent, finalState: FsmState);
+    onNewState(fsmName: string, initialState: FsmState): void;
+    onStateTransition(fsmName: string, onEvent: FsmEvent, oldState: FsmState, newState: FsmState): void;
+    onInvalidStateTransition(fsmName: string, onEvent: FsmEvent, currentState: FsmState): void;
+    onEventAfterFinalState(fsmName: string, onEvent: FsmEvent, finalState: FsmState): void;
 }
 
 export class FiniteStateMachine {
@@ -19,7 +19,7 @@ export class FiniteStateMachine {
         return new FiniteStateMachine(name);
     }
 
-    private constructor(private readonly _name: string, private _listener: FSMListener = null) {
+    private constructor(private readonly _name: string, private _listener: FSMListener | null = null) {
 
     }
 
@@ -45,7 +45,7 @@ export class FiniteStateMachine {
         this._allowSelfTransition = allow;
     }
 
-    getInitialState(fsmRegionName?: string): FsmState {
+    getInitialState(fsmRegionName?: string): FsmState | null {
         if (!fsmRegionName) {
             fsmRegionName = this._name;
         }
@@ -77,8 +77,8 @@ export class FiniteStateMachine {
     }
 
     getState(stateId: number, stateName: string): FsmState | null {
-        const state = this._states.get(stateId);
-        return (state.stateName === stateName) ? state : null;
+        const state = this._states.get(stateId) || null;
+        return (state && state.stateName === stateName) ? state : null;
     }
 
     getStateById(stateId: number): FsmState | null {
@@ -125,8 +125,8 @@ export class FiniteStateMachine {
     }
 
     getEvent(eventId: number, eventName: string): FsmEvent | null {
-        const event = this._events.get(eventId);
-        return (event.eventName === eventName) ? event : null;
+        const event = this._events.get(eventId) || null;
+        return (event && event.eventName === eventName) ? event : null;
     }
 
     getEventById(eventId: number): FsmEvent | null {
@@ -153,7 +153,7 @@ export class FiniteStateMachine {
         return newEvent;
     }
 
-    addStateTransition(currentState: FsmState, onEvent: FsmEvent, nextState: FsmState): void {
+    addStateTransition(currentState: FsmState | null, onEvent: FsmEvent | null, nextState: FsmState | null): void {
         if (!currentState || !onEvent || !nextState) {
             throw new Error('Invalid action: cannot create state transition on incomplete input');
         }
@@ -173,7 +173,7 @@ export class FiniteStateMachine {
         this.addStateTransition(this.getStateByName(currentState), this.getEventByName(onEvent), this.getStateByName(nextState));
     }
 
-    addStateTransitionForAllStates(onEvent: FsmEvent, nextState: FsmState): void {
+    addStateTransitionForAllStates(onEvent: FsmEvent | null, nextState: FsmState | null): void {
         if (!onEvent || !nextState) {
             throw new Error('Invalid action: cannot create state transition on incomplete input');
         }
@@ -197,7 +197,7 @@ export class FiniteStateMachine {
         this.addStateTransitionForAllStates(this.getEventByName(onEvent), this.getStateByName(nextState));
     }
 
-    removeStateTransition(currentState: FsmState, onEvent: FsmEvent): void {
+    removeStateTransition(currentState: FsmState | null, onEvent: FsmEvent | null): void {
         if (!currentState || !onEvent) {
             throw new Error('Invalid action: cannot remove state transition on incomplete input');
         }
@@ -213,7 +213,7 @@ export class FiniteStateMachine {
         this.removeStateTransition(this.getStateByName(currentState), this.getEventByName(onEvent));
     }
 
-    removeStateTransitionForAllStates(onEvent: FsmEvent): void {
+    removeStateTransitionForAllStates(onEvent: FsmEvent | null): void {
         if (!onEvent) {
             throw new Error('Invalid action: cannot remove state transition on incomplete input');
         }
@@ -237,7 +237,7 @@ export class FiniteStateMachine {
         this.removeStateTransitionForAllStates(this.getEventByName(onEvent));
     }
 
-    nextState(currentState: FsmState, onEvent: FsmEvent): FsmState | null {
+    nextState(currentState: FsmState | null, onEvent: FsmEvent | null): FsmState | null {
         if (!currentState || !onEvent) { return null; }
 
         return currentState.nextState(onEvent) || null;
@@ -251,7 +251,7 @@ export class FiniteStateMachine {
         return this.nextState(this.getStateByName(currentState), this.getEventByName(name));
     }
 
-    isTransitionValid(currentState: FsmState, onEvent: FsmEvent, newState: FsmState): boolean {
+    isTransitionValid(currentState: FsmState | null, onEvent: FsmEvent | null, newState: FsmState | null): boolean {
         if (!currentState || !onEvent || !newState) { return false; }
         return currentState.hasNextStateOnEvent(onEvent, newState);
     }
@@ -264,7 +264,7 @@ export class FiniteStateMachine {
         return this.isTransitionValid(this.getStateByName(currentState), this.getEventByName(onEvent), this.getStateByName(newState));
     }
 
-    isTransitionValidByEvent(currentState: FsmState, onEvent: FsmEvent): boolean {
+    isTransitionValidByEvent(currentState: FsmState | null, onEvent: FsmEvent | null): boolean {
         if (!currentState || !onEvent) { return false; }
         return currentState.isTransitionValid(onEvent);
     }

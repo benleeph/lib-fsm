@@ -10,7 +10,7 @@ export class FsmEvent {
         return this._eventName;
     }
 
-    equals(otherEvent: FsmEvent) {
+    equals(otherEvent?: FsmEvent) {
         if (otherEvent) {
             return (this._eventId === otherEvent._eventId) && (this._eventName === otherEvent._eventName);
         }
