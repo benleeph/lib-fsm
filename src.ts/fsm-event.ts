@@ -1,8 +1,6 @@
 export class FsmEvent {
 
-    constructor(private readonly _eventId: number, private _eventName: string) {
-
-    }
+    constructor(private readonly _eventId: number, private _eventName: string) { }
 
     get eventId() {
         return this._eventId;

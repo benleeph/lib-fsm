@@ -1,14 +1,14 @@
 import { FsmState } from "./fsm-state";
 import { FsmEvent } from "./fsm-event";
 
-interface FSMListener {
+export interface FSMListener {
     onNewState(fsmName: string, initialState: FsmState);
     onStateTransition(fsmName: string, onEvent: FsmEvent, oldState: FsmState, newState: FsmState);
     onInvalidStateTransition(fsmName: string, onEvent: FsmEvent, currentState: FsmState);
     onEventAfterFinalState(fsmName: string, onEvent: FsmEvent, finalState: FsmState);
 }
 
-class FiniteStateMachine {
+export class FiniteStateMachine {
 
     private readonly _states = new Map<number, FsmState>();
     private readonly _events = new Map<number, FsmEvent>();
