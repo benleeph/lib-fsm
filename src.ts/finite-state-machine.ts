@@ -277,10 +277,13 @@ export class FiniteStateMachine {
         return this.isTransitionValidByEvent(this.getStateByName(currentState), this.getEventByName(onEvent));
     }
 
-    get stateTableString() {
+    getStateTableString(separator?: string) {
+        if (!separator) {
+            separator = '';
+        }
         let allStateTables = '';
         this._states.forEach(state => {
-            allStateTables += `${state.stateTableString}`;
+            allStateTables += `${separator}${state.getStateTableString(separator)}`;
         });
         return allStateTables;
     }
@@ -296,18 +299,13 @@ export class FiniteStateMachine {
             events += `\t${event.toString()}\n`;
         });
 
-        let allStateTables = '';
-        this._states.forEach(state => {
-            allStateTables += `\t${state.stateTableString}`;
-        });
-
         return "FSM: " + this._name + "\n" +
             "STATES:\n" +
             states + "\n\n" +
             "EVENTS:\n" +
             events + "\n\n" +
             "STATE TABLE:\n" +
-            allStateTables + "\n";
+            this.getStateTableString('\t') + "\n";
     }
 
 }

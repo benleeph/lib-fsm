@@ -50,7 +50,7 @@ export class FsmState {
         return (!this._transitionTable || this._transitionTable.size === 0);
     }
 
-    addTransition(onEvent: FsmEvent, nextState: FsmState) {
+    addTransition(onEvent: FsmEvent | null, nextState: FsmState | null) {
         if (!this._transitionTable) {
             throw new Error(`Invalid action: cannot add transition to final state: ${this.toString()}`);
         }
@@ -119,13 +119,19 @@ export class FsmState {
         return (this._transitionTable ? this._transitionTable.size : 0);
     }
 
-    get stateTableString() {
+    getStateTableString(separator?: string) {
+        if (!separator) {
+            separator = '';
+        }
         if (!this._transitionTable || this.isFinalState()) {
             return `${this.toString()} ---[X]\n`;
         }
 
         let stateTable = '';
         this._transitionTable.forEach((nextState, event) => {
+            if (stateTable) {
+                stateTable += '\t';
+            }
             stateTable += `${this.toString()} ---[ ${event} ]--> ${nextState}\n`;
         });
         return stateTable;
