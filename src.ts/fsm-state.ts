@@ -131,7 +131,7 @@ export class FsmState {
     }
 
     toString() {
-        const initialStateInfo = this.isInitialState() ? `:@IS${this.initialStateRegionName}` : '';
+        const initialStateInfo = this.isInitialState() ? `:IS@${this.initialStateRegionName}` : '';
         const finalStateInfo = this.isFinalState() ? ':FS' : '';
         return `${this.stateName}(${this.stateId}${initialStateInfo}${finalStateInfo})`;
     }

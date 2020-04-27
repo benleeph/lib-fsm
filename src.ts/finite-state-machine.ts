@@ -16,7 +16,7 @@ export class FiniteStateMachine {
     private _allowSelfTransition = true;
 
     static createNewFiniteStateMachine(fsmName: string): FiniteStateMachine {
-        return new FiniteStateMachine(name);
+        return new FiniteStateMachine(fsmName);
     }
 
     private constructor(private readonly _name: string, private _listener: FSMListener | null = null) {
@@ -296,16 +296,18 @@ export class FiniteStateMachine {
             events += `\t${event.toString()}\n`;
         });
 
-        return `FSM: ${this._name}
-        STATES:
-        ${states}
+        let allStateTables = '';
+        this._states.forEach(state => {
+            allStateTables += `\t${state.stateTableString}`;
+        });
 
-        EVENTS:
-        ${events}
-
-        STATE TABLE:
-        ${this.stateTableString}
-        `;
+        return "FSM: " + this._name + "\n" +
+            "STATES:\n" +
+            states + "\n\n" +
+            "EVENTS:\n" +
+            events + "\n\n" +
+            "STATE TABLE:\n" +
+            allStateTables + "\n";
     }
 
 }
