@@ -109,9 +109,9 @@ export class FsmState {
     hasNextTransition(nextState: FsmState) {
         if (!this._transitionTable || !nextState) { return false; }
 
-        this._transitionTable.forEach((state) => {
+        for (const state of this._transitionTable.values()) {
             if (state.equals(nextState)) { return true; }
-        });
+        }
         return false;
     }
 
@@ -128,6 +128,7 @@ export class FsmState {
         this._transitionTable.forEach((nextState, event) => {
             stateTable += `${this.toString()} ---[ ${event} ]--> ${nextState}\n`;
         });
+        return stateTable;
     }
 
     toString() {

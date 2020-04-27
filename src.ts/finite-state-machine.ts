@@ -86,11 +86,11 @@ export class FiniteStateMachine {
     }
 
     getStateByName(stateName: string): FsmState | null {
-        this._states.forEach(state => {
+        for (const state of this._states.values()) {
             if (state.stateName === stateName) {
                 return state;
             }
-        });
+        }
         return null;
     }
 
@@ -134,11 +134,11 @@ export class FiniteStateMachine {
     }
 
     getEventByName(eventName: string): FsmEvent | null {
-        this._events.forEach(event => {
+        for (const event of this._events.values()) {
             if (event.eventName === eventName) {
                 return event;
             }
-        });
+        }
         return null;
     }
 
