@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Typescript library to create finite state machine",
   "main": "./dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "release": "npm run version-patch && npm run build-only",
     "build": "npm run version-prerelease && npm run build-only",
