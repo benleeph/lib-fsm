@@ -1,5 +1,5 @@
 node_modules/
 src.ts/
-tests/
+test/
 package-lock.json
 tsconfig.json
