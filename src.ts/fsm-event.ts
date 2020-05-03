@@ -11,10 +11,7 @@ export class FsmEvent {
     }
 
     equals(otherEvent?: FsmEvent) {
-        if (otherEvent) {
-            return (this._eventId === otherEvent._eventId) && (this._eventName === otherEvent._eventName);
-        }
-        return false;
+        return otherEvent ? (this._eventId === otherEvent._eventId) && (this._eventName === otherEvent._eventName) : false;
     }
 
     toString() {
