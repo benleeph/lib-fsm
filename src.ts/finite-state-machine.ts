@@ -76,7 +76,7 @@ export class FiniteStateMachine {
         return true;
     }
 
-    getState(state: string | number, stateName?: string): FsmState | null {
+    getState(state: number | string, stateName?: string): FsmState | null {
         if (typeof stateName !== "undefined") {
             if (typeof state === "number") {
                 const stateObj = this._states.get(state) || null;
@@ -129,22 +129,27 @@ export class FiniteStateMachine {
         return newFinalState;
     }
 
-    getEvent(eventId: number, eventName: string): FsmEvent | null {
-        const event = this._events.get(eventId) || null;
-        return (event && event.eventName === eventName) ? event : null;
-    }
+    getEvent(event: number | string, eventName?: string): FsmEvent | null {
+        if (typeof eventName !== "undefined") {
+            if (typeof event === "number") {
+                const eventObj = this._events.get(event) || null;
+                return (eventObj && eventObj.eventName === eventName) ? eventObj : null;
 
-    getEventById(eventId: number): FsmEvent | null {
-        return this._events.get(eventId) || null;
-    }
-
-    getEventByName(eventName: string): FsmEvent | null {
-        for (const event of this._events.values()) {
-            if (event.eventName === eventName) {
-                return event;
+            } else {
+                return null;
             }
         }
-        return null;
+
+        if (typeof event === "number") {
+            return this._events.get(event) || null;
+        } else {
+            for (const eventObj of this._events.values()) {
+                if (eventObj.eventName === event) {
+                    return eventObj;
+                }
+            }
+            return null;
+        }
     }
 
     addEvent(eventName: string, eventId?: number) {
