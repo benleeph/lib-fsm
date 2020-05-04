@@ -76,22 +76,27 @@ export class FiniteStateMachine {
         return true;
     }
 
-    getState(stateId: number, stateName: string): FsmState | null {
-        const state = this._states.get(stateId) || null;
-        return (state && state.stateName === stateName) ? state : null;
-    }
-
-    getStateById(stateId: number): FsmState | null {
-        return this._states.get(stateId) || null;
-    }
-
-    getStateByName(stateName: string): FsmState | null {
-        for (const state of this._states.values()) {
-            if (state.stateName === stateName) {
-                return state;
+    getState(state: string | number, stateName?: string): FsmState | null {
+        if (typeof stateName !== "undefined") {
+            if (typeof state === "number") {
+                const stateObj = this._states.get(state) || null;
+                return (stateObj && stateObj.stateName === stateName) ? stateObj : null;
+            } else {
+                return null;
             }
         }
-        return null;
+
+        if (typeof state === "number") {
+            return this._states.get(state) || null;
+        } else {
+            for (const stateObj of this._states.values()) {
+                if (stateObj.stateName === state) {
+                    return stateObj;
+                }
+            }
+            return null;
+
+        }
     }
 
     addState(stateName: string, stateId?: number) {
