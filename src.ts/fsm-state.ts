@@ -21,7 +21,7 @@ export class FsmState {
         return this._stateName;
     }
 
-    equals(otherState: FsmState | number | string) {
+    equals(otherState?: FsmState | number | string) {
         if (otherState instanceof FsmState) {
             return this._stateId === otherState.stateId && this._stateName === otherState.stateName;
         } else if (typeof otherState === "number") {
