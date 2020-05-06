@@ -76,22 +76,28 @@ export class FiniteStateMachine {
         return true;
     }
 
-    getState(stateId: number, stateName: string): FsmState | null {
-        const state = this._states.get(stateId) || null;
-        return (state && state.stateName === stateName) ? state : null;
-    }
-
-    getStateById(stateId: number): FsmState | null {
-        return this._states.get(stateId) || null;
-    }
-
-    getStateByName(stateName: string): FsmState | null {
-        for (const state of this._states.values()) {
-            if (state.stateName === stateName) {
-                return state;
+    getState(state: number | string, stateName?: string): FsmState | null {
+        if (typeof stateName !== "undefined") {
+            if (typeof state === "number") {
+                const stateObj = this._states.get(state) || null;
+                return (stateObj && stateObj.stateName === stateName) ? stateObj : null;
+            } else {
+                return null;
             }
         }
-        return null;
+
+        if (typeof state === "number") {
+            return this._states.get(state) || null;
+        } else if (typeof state === "string") {
+            for (const stateObj of this._states.values()) {
+                if (stateObj.stateName === state) {
+                    return stateObj;
+                }
+            }
+            return null;
+        } else {
+            return null;
+        }
     }
 
     addState(stateName: string, stateId?: number) {
@@ -124,22 +130,29 @@ export class FiniteStateMachine {
         return newFinalState;
     }
 
-    getEvent(eventId: number, eventName: string): FsmEvent | null {
-        const event = this._events.get(eventId) || null;
-        return (event && event.eventName === eventName) ? event : null;
-    }
+    getEvent(event: number | string, eventName?: string): FsmEvent | null {
+        if (typeof eventName !== "undefined") {
+            if (typeof event === "number") {
+                const eventObj = this._events.get(event) || null;
+                return (eventObj && eventObj.eventName === eventName) ? eventObj : null;
 
-    getEventById(eventId: number): FsmEvent | null {
-        return this._events.get(eventId) || null;
-    }
-
-    getEventByName(eventName: string): FsmEvent | null {
-        for (const event of this._events.values()) {
-            if (event.eventName === eventName) {
-                return event;
+            } else {
+                return null;
             }
         }
-        return null;
+
+        if (typeof event === "number") {
+            return this._events.get(event) || null;
+        } else if (typeof event === "string") {
+            for (const eventObj of this._events.values()) {
+                if (eventObj.eventName === event) {
+                    return eventObj;
+                }
+            }
+            return null;
+        } else {
+            return null;
+        }
     }
 
     addEvent(eventName: string, eventId?: number) {
@@ -153,128 +166,96 @@ export class FiniteStateMachine {
         return newEvent;
     }
 
-    addStateTransition(currentState: FsmState | null, onEvent: FsmEvent | null, nextState: FsmState | null): void {
-        if (!currentState || !onEvent || !nextState) {
+    addStateTransition(currentState: FsmState | number | string, onEvent: FsmEvent | number | string, nextState: FsmState | number | string): FiniteStateMachine {
+        const currentStateObj = (currentState instanceof FsmState) ? currentState : this.getState(currentState);
+        const onEventObj = (onEvent instanceof FsmEvent) ? onEvent : this.getEvent(onEvent);
+        const nextStateObj = (nextState instanceof FsmState) ? nextState : this.getState(nextState);
+
+        if (!currentStateObj || !onEventObj || !nextStateObj) {
             throw new Error('Invalid action: cannot create state transition on incomplete input');
         }
 
-        if (!this.allowSelfTransition && currentState.equals(nextState)) {
+        if (!this.allowSelfTransition && currentStateObj.equals(nextStateObj)) {
             throw new Error(`Invalid action: self transition disabled for ${currentState}[${this._name}]`);
         }
 
-        currentState.addTransition(onEvent, nextState);
+        currentStateObj.addTransition(onEventObj, nextStateObj);
+        return this;
     }
 
-    addStateTransitionById(currentState: number, onEvent: number, nextState: number): void {
-        this.addStateTransition(this.getStateById(currentState), this.getEventById(onEvent), this.getStateById(nextState));
-    }
+    addStateTransitionForAllStates(onEvent: FsmEvent | number | string, nextState: FsmState | number | string): FiniteStateMachine {
+        const onEventObj = (onEvent instanceof FsmEvent) ? onEvent : this.getEvent(onEvent);
+        const nextStateObj = (nextState instanceof FsmState) ? nextState : this.getState(nextState);
 
-    addStateTransitionByName(currentState: string, onEvent: string, nextState: string): void {
-        this.addStateTransition(this.getStateByName(currentState), this.getEventByName(onEvent), this.getStateByName(nextState));
-    }
-
-    addStateTransitionForAllStates(onEvent: FsmEvent | null, nextState: FsmState | null): void {
-        if (!onEvent || !nextState) {
+        if (!onEventObj || !nextStateObj) {
             throw new Error('Invalid action: cannot create state transition on incomplete input');
         }
 
         this._states.forEach(state => {
             if (!state.isFinalState()) {
                 try {
-                    this.addStateTransition(state, onEvent, nextState);
+                    this.addStateTransition(state, onEventObj, nextStateObj);
                 } catch (error) {
                     // ignore
                 }
             }
         });
+        return this;
     }
 
-    addStateTransitionForAllStatesById(onEvent: number, nextState: number): void {
-        this.addStateTransitionForAllStates(this.getEventById(onEvent), this.getStateById(nextState));
-    }
+    removeStateTransition(currentState: FsmState | number | string, onEvent: FsmEvent | number | string): FiniteStateMachine {
+        const currentStateObj = (currentState instanceof FsmState) ? currentState : this.getState(currentState);
+        const onEventObj = (onEvent instanceof FsmEvent) ? onEvent : this.getEvent(onEvent);
 
-    addStateTransitionForAllStatesByName(onEvent: string, nextState: string): void {
-        this.addStateTransitionForAllStates(this.getEventByName(onEvent), this.getStateByName(nextState));
-    }
-
-    removeStateTransition(currentState: FsmState | null, onEvent: FsmEvent | null): void {
-        if (!currentState || !onEvent) {
+        if (!currentStateObj || !onEventObj) {
             throw new Error('Invalid action: cannot remove state transition on incomplete input');
         }
-
-        currentState.removeTransition(onEvent);
+        currentStateObj.removeTransition(onEventObj);
+        return this;
     }
 
-    removeStateTransitionById(currentState: number, onEvent: number): void {
-        this.removeStateTransition(this.getStateById(currentState), this.getEventById(onEvent));
-    }
+    removeAllStatesTransitionForEvent(onEvent: FsmEvent | number | string): FiniteStateMachine {
+        const onEventObj = (onEvent instanceof FsmEvent) ? onEvent : this.getEvent(onEvent);
 
-    removeStateTransitionByName(currentState: string, onEvent: string): void {
-        this.removeStateTransition(this.getStateByName(currentState), this.getEventByName(onEvent));
-    }
-
-    removeStateTransitionForAllStates(onEvent: FsmEvent | null): void {
-        if (!onEvent) {
+        if (!onEventObj) {
             throw new Error('Invalid action: cannot remove state transition on incomplete input');
         }
 
         this._states.forEach(state => {
             if (!state.isFinalState()) {
                 try {
-                    this.removeStateTransition(state, onEvent);
+                    this.removeStateTransition(state, onEventObj);
                 } catch (error) {
                     // ignore
                 }
             }
         });
+        return this;
     }
 
-    removeStateTransitionForAllStatesById(onEvent: number): void {
-        this.removeStateTransitionForAllStates(this.getEventById(onEvent));
+    nextState(currentState: FsmState | number | string, onEvent: FsmEvent | number | string): FsmState | null {
+        const currentStateObj = (currentState instanceof FsmState) ? currentState : this.getState(currentState);
+        const onEventObj = (onEvent instanceof FsmEvent) ? onEvent : this.getEvent(onEvent);
+
+        if (!currentStateObj || !onEventObj) { return null; }
+        return currentStateObj.nextState(onEventObj) || null;
     }
 
-    removeStateTransitionForAllStatesByName(onEvent: string): void {
-        this.removeStateTransitionForAllStates(this.getEventByName(onEvent));
+    isTransitionValid(currentState: FsmState | number | string, onEvent: FsmEvent | number | string, newState: FsmState | number | string): boolean {
+        const currentStateObj = (currentState instanceof FsmState) ? currentState : this.getState(currentState);
+        const onEventObj = (onEvent instanceof FsmEvent) ? onEvent : this.getEvent(onEvent);
+        const newStateObj = (newState instanceof FsmState) ? newState : this.getState(newState);
+
+        if (!currentStateObj || !onEventObj || !newStateObj) { return false; }
+        return currentStateObj.hasNextStateOnEvent(onEventObj, newStateObj);
     }
 
-    nextState(currentState: FsmState | null, onEvent: FsmEvent | null): FsmState | null {
-        if (!currentState || !onEvent) { return null; }
+    isTransitionValidByEvent(currentState: FsmState | number | string, onEvent: FsmEvent | number | string): boolean {
+        const currentStateObj = (currentState instanceof FsmState) ? currentState : this.getState(currentState);
+        const onEventObj = (onEvent instanceof FsmEvent) ? onEvent : this.getEvent(onEvent);
 
-        return currentState.nextState(onEvent) || null;
-    }
-
-    nextStateById(currentState: number, onEvent: number): FsmState | null {
-        return this.nextState(this.getStateById(currentState), this.getEventById(onEvent));
-    }
-
-    nextStateByName(currentState: string, onEvent: string): FsmState | null {
-        return this.nextState(this.getStateByName(currentState), this.getEventByName(name));
-    }
-
-    isTransitionValid(currentState: FsmState | null, onEvent: FsmEvent | null, newState: FsmState | null): boolean {
-        if (!currentState || !onEvent || !newState) { return false; }
-        return currentState.hasNextStateOnEvent(onEvent, newState);
-    }
-
-    isTransitionValidById(currentState: number, onEvent: number, newState: number): boolean {
-        return this.isTransitionValid(this.getStateById(currentState), this.getEventById(onEvent), this.getStateById(newState));
-    }
-
-    isTransitionValidByName(currentState: string, onEvent: string, newState: string): boolean {
-        return this.isTransitionValid(this.getStateByName(currentState), this.getEventByName(onEvent), this.getStateByName(newState));
-    }
-
-    isTransitionValidByEvent(currentState: FsmState | null, onEvent: FsmEvent | null): boolean {
-        if (!currentState || !onEvent) { return false; }
-        return currentState.isTransitionValid(onEvent);
-    }
-
-    isTransitionValidByEventId(currentState: number, onEvent: number): boolean {
-        return this.isTransitionValidByEvent(this.getStateById(currentState), this.getEventById(onEvent));
-    }
-
-    isTransitionValidByEventName(currentState: string, onEvent: string): boolean {
-        return this.isTransitionValidByEvent(this.getStateByName(currentState), this.getEventByName(onEvent));
+        if (!currentStateObj || !onEventObj) { return false; }
+        return currentStateObj.isTransitionValid(onEventObj);
     }
 
     getStateTableString(separator?: string) {

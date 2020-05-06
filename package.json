@@ -1,6 +1,6 @@
 {
   "name": "lib-fsm",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "Typescript library to create finite state machine",
   "main": "./dist/index.js",
   "types": "dist/index.d.ts",

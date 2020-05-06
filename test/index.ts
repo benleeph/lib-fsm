@@ -31,18 +31,18 @@ fsm.addEvent('Secs_60', 60);
 fsm.addEvent('Secs_90', 90);
 const veryLongTime = fsm.addEvent('Secs_600', 600);
 
-fsm.getStateByName('Red')
-    ?.addTransition(fsm.getEventByName('NoCar'), greenLight)
-    ?.addTransition(fsm.getEventByName('Secs_60'), greenLight)
-    ?.addTransition(fsm.getEventByName('Secs_600'), damaged)
+fsm.getState('Red')
+    ?.addTransition(fsm.getEvent('NoCar'), greenLight)
+    ?.addTransition(fsm.getEvent('Secs_60'), greenLight)
+    ?.addTransition(fsm.getEvent('Secs_600'), damaged)
     ;
 
-yellowLight.addTransition(fsm.getEventById(10), fsm.getStateByName('Red'));
-yellowLight.addTransition(fsm.getEventByName('Secs_60'), fsm.getStateById(-1));
+yellowLight.addTransition(fsm.getEvent(10), fsm.getState('Red'));
+yellowLight.addTransition(fsm.getEvent('Secs_60'), fsm.getState(-1));
 yellowLight.addTransition(veryLongTime, damaged);
 
-fsm.addStateTransitionByName('Green', 'Secs_90', 'Yellow');
-fsm.addStateTransitionById(999, 0, 999);
+fsm.addStateTransition('Green', 'Secs_90', 'Yellow');
+fsm.addStateTransition(999, 0, 999);
 fsm.addStateTransition(greenLight, veryLongTime, damaged);
 
 try {
@@ -58,17 +58,17 @@ console.log(fsm.toString());
 console.log('*** Running FSM');
 let trafficLight = fsm.getInitialState();
 trafficLight = showTrafficLight(trafficLight);
-trafficLight = showTrafficLight(trafficLight, fsm.getEventById(0));
+trafficLight = showTrafficLight(trafficLight, fsm.getEvent(0));
 for (let i = 0; i < 3; ++i) {
-    trafficLight = showTrafficLight(trafficLight, fsm.getEventByName('Secs_10'));
-    trafficLight = showTrafficLight(trafficLight, fsm.getEventByName('Secs_60'));
-    trafficLight = showTrafficLight(trafficLight, fsm.getEventByName('Secs_90'));
+    trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_10'));
+    trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_60'));
+    trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_90'));
 }
-trafficLight = showTrafficLight(trafficLight, fsm.getEventByName('Secs_10'));
-trafficLight = showTrafficLight(trafficLight, fsm.getEventByName('Secs_90'));
-trafficLight = showTrafficLight(trafficLight, fsm.getEventByName('Secs_600'));
-trafficLight = showTrafficLight(trafficLight, fsm.getEventByName('Secs_600'));
-trafficLight = showTrafficLight(trafficLight, fsm.getEventByName('Secs_600'));
-trafficLight = showTrafficLight(trafficLight, fsm.getEventByName('Secs_600'));
+trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_10'));
+trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_90'));
+trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_600'));
+trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_600'));
+trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_600'));
+trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_600'));
 
 console.log('\n\nTerminating Traffic Light FSM');

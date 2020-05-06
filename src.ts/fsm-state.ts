@@ -5,7 +5,7 @@ export class FsmState {
     private _initialStateRegionName: string | null = null;
     private _transitionTable: Map<FsmEvent, FsmState> | null = null;
 
-    constructor(private readonly _fsmName: string, private readonly _stateId: number, private readonly _stateName: string, private _isFinalState: boolean = false) {
+    constructor(private readonly _fsmName: string, private readonly _stateId: number, private readonly _stateName: string, private readonly _isFinalState: boolean = false) {
         this._transitionTable = this._isFinalState ? null : new Map<FsmEvent, FsmState>();
     }
 
@@ -21,11 +21,16 @@ export class FsmState {
         return this._stateName;
     }
 
-    equals(otherState?: FsmState) {
-        if (otherState) {
-            return (this._stateId === otherState.stateId && this._stateName === otherState.stateName);
+    equals(otherState?: FsmState | number | string) {
+        if (otherState instanceof FsmState) {
+            return this._stateId === otherState.stateId && this._stateName === otherState.stateName;
+        } else if (typeof otherState === "number") {
+            return this._stateId === otherState;
+        } else if (typeof otherState === "string") {
+            return this._stateName === otherState;
+        } else {
+            return false;
         }
-        return false;
     }
 
     markInitial(fsmRegionName: string) {
@@ -47,11 +52,11 @@ export class FsmState {
     }
 
     isFinalState() {
-        return (!this._transitionTable || this._transitionTable.size === 0);
+        return (this._isFinalState || !this._transitionTable || this._transitionTable.size === 0);
     }
 
     addTransition(onEvent: FsmEvent | null, nextState: FsmState | null) {
-        if (!this._transitionTable) {
+        if (this._isFinalState || !this._transitionTable) {
             throw new Error(`Invalid action: cannot add transition to final state: ${this.toString()}`);
         }
 
@@ -75,8 +80,8 @@ export class FsmState {
         return this;
     }
 
-    removeTransition(onEvent: FsmEvent) {
-        if (!this._transitionTable) {
+    removeTransition(onEvent: FsmEvent | null) {
+        if (this._isFinalState || !this._transitionTable) {
             throw new Error(`Invalid action: cannot remove transition for final state: ${this.toString()}`);
         }
 
@@ -92,6 +97,10 @@ export class FsmState {
         return this;
     }
 
+    isTransitionValid(onEvent: FsmEvent) {
+        return this.nextState(onEvent) !== null;
+    }
+
     nextState(onEvent: FsmEvent): FsmState | null {
         if (this._isFinalState || !this._transitionTable) { return null; }
         return this._transitionTable.get(onEvent) || null;
@@ -100,10 +109,6 @@ export class FsmState {
     hasNextStateOnEvent(onEvent: FsmEvent, nextState: FsmState) {
         if (!this._transitionTable || !onEvent || !nextState) { return false; }
         return nextState.equals(this._transitionTable.get(onEvent));
-    }
-
-    isTransitionValid(onEvent: FsmEvent) {
-        return this.nextState(onEvent) !== null;
     }
 
     hasNextTransition(nextState: FsmState) {

@@ -10,11 +10,16 @@ export class FsmEvent {
         return this._eventName;
     }
 
-    equals(otherEvent?: FsmEvent) {
-        if (otherEvent) {
-            return (this._eventId === otherEvent._eventId) && (this._eventName === otherEvent._eventName);
+    equals(otherEvent?: FsmEvent | number | string) {
+        if (otherEvent instanceof FsmEvent) {
+            return this._eventId === otherEvent._eventId && this._eventName === otherEvent._eventName;
+        } else if (typeof otherEvent === "number") {
+            return this._eventId === otherEvent;
+        } else if (typeof otherEvent === "string") {
+            return this._eventName === otherEvent;
+        } else {
+            return false;
         }
-        return false;
     }
 
     toString() {
