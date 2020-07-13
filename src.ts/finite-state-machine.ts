@@ -101,7 +101,9 @@ export class FiniteStateMachine {
     }
 
     addState(stateName: string, stateId?: number) {
-        if (!stateId) { stateId = this._states.size; }
+        if (typeof stateId === "undefined" || stateId === null) {
+            stateId = this._states.size;
+        }
 
         const newState = new FsmState(this._name, stateId, stateName);
         if (this._states.has(stateId)) {
@@ -116,7 +118,9 @@ export class FiniteStateMachine {
     }
 
     addFinalState(stateName: string, stateId?: number) {
-        if (!stateId) { stateId = this._states.size };
+        if (typeof stateId === "undefined" || stateId === null) {
+            stateId = this._states.size
+        };
 
         const newFinalState = new FsmState(this._name, stateId, stateName, true);
         if (this._states.has(stateId)) {
@@ -156,7 +160,9 @@ export class FiniteStateMachine {
     }
 
     addEvent(eventName: string, eventId?: number) {
-        if (!eventId) { eventId = this._events.size };
+        if (typeof eventId === "undefined" || eventId === null) {
+            eventId = this._events.size
+        };
 
         const newEvent = new FsmEvent(eventId, eventName);
         if (this._events.has(eventId)) {
