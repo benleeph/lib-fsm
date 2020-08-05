@@ -20,7 +20,6 @@ export class FiniteStateMachine {
     }
 
     private constructor(private readonly _name: string, private _listener: FSMListener | null = null) {
-
     }
 
     clearAll(): void {
@@ -56,10 +55,6 @@ export class FiniteStateMachine {
     setInitialState(state: FsmState, fsmRegionName?: string): boolean {
         if (!fsmRegionName) {
             fsmRegionName = this._name;
-        }
-
-        if (this._initialStates.has(fsmRegionName)) {
-            throw new Error(`Invalid action: initial state already set for region: ${fsmRegionName}`);
         }
 
         const lookup = this.getState(state.stateId, state.stateName);
