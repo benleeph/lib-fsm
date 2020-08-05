@@ -1,6 +1,9 @@
 import { FsmEvent } from './fsm-event';
 
-export type OutputFunction = () => void;
+export type MooreFunction = (currentState: FsmState) => void;
+export type MealyFunction = (currentState: FsmState, input: FsmEvent) => void;
+export type GeneralFunction = () => void;
+export type OutputFunction = GeneralFunction | MooreFunction | MealyFunction;
 
 export class FsmState {
 
@@ -81,11 +84,18 @@ export class FsmState {
         return this;
     }
 
-    executeOutput() {
-        if (this._output) {
-            this._output();
+    executeOutput(input?: FsmEvent): void {
+        if (typeof this._output === "undefined" || this._output == null) {
+            return;
         }
-        return this;
+        if (this._output.length === 0) {
+            (this._output as GeneralFunction)();
+        } else if (this._output.length === 1) {
+            (this._output as MooreFunction)(this);
+        } else if (this._output.length === 2 && input != null) {
+            (this._output as MealyFunction)(this, input);
+        }
+        return;
     }
 
     addTransition(onEvent: FsmEvent | null, nextState: FsmState | null) {
