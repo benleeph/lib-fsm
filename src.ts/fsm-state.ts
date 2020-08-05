@@ -52,7 +52,7 @@ export class FsmState {
         return this;
     }
 
-    markUndeterministic() {
+    markNonDeterministic() {
         this._isDeterministic = false;
         return this;
     }
