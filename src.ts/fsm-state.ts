@@ -1,5 +1,7 @@
 import { FsmEvent } from './fsm-event';
 
+export type OutputFunction = () => void;
+
 export class FsmState {
 
     private _initialStateRegionName: string | null = null;
@@ -9,7 +11,8 @@ export class FsmState {
         private readonly _stateId: number,
         private readonly _stateName: string,
         private readonly _isFinalState: boolean = false,
-        private _isDeterministic: boolean = true) {
+        private _isDeterministic: boolean = true,
+        private _output?: OutputFunction) {
         this._transitionTable = this._isFinalState ? null : new Map<FsmEvent, FsmState>();
     }
 
@@ -71,6 +74,18 @@ export class FsmState {
 
     isFinalState() {
         return (this._isFinalState || !this._transitionTable || this._transitionTable.size === 0);
+    }
+
+    setOutputFunction(output: OutputFunction) {
+        this._output = output;
+        return this;
+    }
+
+    executeOutput() {
+        if (this._output) {
+            this._output();
+        }
+        return this;
     }
 
     addTransition(onEvent: FsmEvent | null, nextState: FsmState | null) {
