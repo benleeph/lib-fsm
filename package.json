@@ -31,5 +31,8 @@
   "bugs": {
     "url": "https://github.com/benleeph/lib-fsm/issues"
   },
-  "homepage": "https://github.com/benleeph/lib-fsm#readme"
+  "homepage": "https://github.com/benleeph/lib-fsm#readme",
+  "devDependencies": {
+    "@types/node": "^14.0.27"
+  }
 }

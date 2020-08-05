@@ -1,11 +1,31 @@
 import { FsmState } from "./fsm-state";
 import { FsmEvent } from "./fsm-event";
+import { EventEmitter } from 'events';
 
-export interface FSMListener {
-    onNewState(fsmName: string, initialState: FsmState): void;
-    onStateTransition(fsmName: string, onEvent: FsmEvent, oldState: FsmState, newState: FsmState): void;
-    onInvalidStateTransition(fsmName: string, onEvent: FsmEvent, currentState: FsmState): void;
-    onEventAfterFinalState(fsmName: string, onEvent: FsmEvent, finalState: FsmState): void;
+export enum FsmListenerEvent {
+    onFsmCleared = 'fsm.cleared',
+    onNewInitialStateAdded = 'fsm.state.initial.added',
+    onNewFinalStateAdded = 'fsm.state.final.added',
+    onNewStateAdded = 'fsm.state.added',
+    onNewEventAdded = 'fsm.event.added',
+    onNewTransitionAdded = 'fsm.transit.added',
+    onInitialStateRemoved = 'fsm.state.initial.removed',
+    onStateRemoved = 'fsm.state.removed',
+    onEventRemoved = 'fsm.event.removed',
+    onTransitionRemoved = 'fsm.transition.removed',
+}
+
+export enum TokenListenerEvent {
+    onTokenCreated = 'token.new',
+    onTokenTransitNonDeterministic = 'token.transit.nd',
+    onTokenTransitSelf = 'token.state.changed.self',
+    onTokenTransitState = 'token.state.changed',
+    onTokenStateFinal = 'token.state.final',
+    onTokenInvalidStateChange = 'token.state.invalid.change',
+    onErrorTokenIdNotFound = 'error.notfound.tokenid',
+    onErrorStateNotFound = 'error.notfound.state',
+    onErrorEventNotFound = 'error.notfound.event',
+    onErrorNdStateTableNotFound = 'error.notfound.statetable.nd',
 }
 
 export type NonDeterministicStateTable = (tokenId: string, currentState: FsmState, onEvent: FsmEvent) => FsmState | null;
@@ -16,19 +36,24 @@ export class FiniteStateMachine {
     private readonly _events = new Map<number, FsmEvent>();
     private readonly _initialStates = new Map<string, FsmState>();
     private readonly _tokenInstances = new Map<string, FsmState>();
+    private readonly _internalListener = new EventEmitter();
     private _allowSelfTransition = true;
 
     static createNewFiniteStateMachine(fsmName: string): FiniteStateMachine {
         return new FiniteStateMachine(fsmName);
     }
 
-    private constructor(private readonly _name: string, private _listener: FSMListener | null = null) {
+    private constructor(private readonly _name: string, private _listener?: EventEmitter) {
+        this._internalListener.on('error', (error) => {
+            console.log(`${this._name}:Error: ${error}`);
+        });
     }
 
     clearAll(): void {
         this._states.clear();
         this._events.clear();
         this._initialStates.clear();
+        this._internalListener.emit(FsmListenerEvent.onFsmCleared, this);
     }
 
     isEmpty() {
@@ -67,10 +92,12 @@ export class FiniteStateMachine {
 
         const currentInitialState = this._initialStates.get(fsmRegionName);
         if (currentInitialState) {
+            this._internalListener.emit(FsmListenerEvent.onInitialStateRemoved, currentInitialState, fsmRegionName);
             currentInitialState.unmarkInitial();
         }
 
         this._initialStates.set(fsmRegionName, lookup.markInitial(fsmRegionName));
+        this._internalListener.emit(FsmListenerEvent.onNewInitialStateAdded, lookup, fsmRegionName);
         return true;
     }
 
@@ -112,6 +139,7 @@ export class FiniteStateMachine {
         if (this._initialStates.size === 0) {
             this.setInitialState(newState);
         }
+        this._internalListener.emit(FsmListenerEvent.onNewStateAdded, newState);
         return newState;
     }
 
@@ -129,6 +157,7 @@ export class FiniteStateMachine {
         if (this._initialStates.size === 0) {
             this.setInitialState(newFinalState);
         }
+        this._internalListener.emit(FsmListenerEvent.onNewFinalStateAdded, newFinalState);
         return newFinalState;
     }
 
@@ -166,6 +195,7 @@ export class FiniteStateMachine {
             throw new Error(`Invalid action: duplicate event: ${newEvent}[${this._name}]`);
         }
         this._events.set(eventId, newEvent);
+        this._internalListener.emit(FsmListenerEvent.onNewEventAdded, newEvent);
         return newEvent;
     }
 
@@ -183,6 +213,7 @@ export class FiniteStateMachine {
         }
 
         currentStateObj.addTransition(onEventObj, nextStateObj);
+        this._internalListener.emit(FsmListenerEvent.onNewTransitionAdded, currentStateObj, onEventObj, nextStateObj);
         return this;
     }
 
@@ -214,6 +245,7 @@ export class FiniteStateMachine {
             throw new Error('Invalid action: cannot remove state transition on incomplete input');
         }
         currentStateObj.removeTransition(onEventObj);
+        this._internalListener.emit(FsmListenerEvent.onTransitionRemoved, currentStateObj, onEventObj);
         return this;
     }
 
@@ -284,16 +316,19 @@ export class FiniteStateMachine {
             throw new Error(`No initial state for ${fsmRegionName ?? this._name}`);
         }
         this._tokenInstances.set(tokenId, token);
+        this._listener?.emit(TokenListenerEvent.onTokenCreated, tokenId, token);
         return token;
     }
 
     getTokenInstance(tokenId: string, autoCreate = true, fsmRegionName?: string): FsmState {
         if (!tokenId?.trim()) {
+            this._listener?.emit(TokenListenerEvent.onErrorTokenIdNotFound, tokenId);
             throw new Error('Invalid action: invalid tokenId');
         }
         let token = this._tokenInstances.get(tokenId) || null;
         if (!token) {
             if (!autoCreate) {
+                this._listener?.emit(TokenListenerEvent.onErrorTokenIdNotFound, tokenId);
                 throw new Error(`Token instance ${tokenId} not exists`);
             }
             token = this.createTokenInstance(tokenId, fsmRegionName);
@@ -305,6 +340,7 @@ export class FiniteStateMachine {
         const tokenInstance = this.getTokenInstance(tokenId);
         const event = onEvent instanceof FsmEvent ? onEvent : this.getEvent(onEvent);
         if (!event) {
+            this._listener?.emit(TokenListenerEvent.onErrorEventNotFound, tokenId, tokenInstance, onEvent);
             throw new Error('Invalid action: invalid onEvent');
         }
 
@@ -313,15 +349,36 @@ export class FiniteStateMachine {
         if (nextState && !nextState.isDeterministic()) {
             tableType = 'ND';
             if (!altStateTable) {
+                this._listener?.emit(TokenListenerEvent.onErrorNdStateTableNotFound, tokenId, tokenInstance, onEvent, nextState);
                 throw new Error(`Invalid${tableType}StateTable:- tokenId:${tokenId} currentState:${tokenInstance.stateName}[${tokenInstance.stateId}] onEvent:${onEvent}`);
             }
+            this._listener?.emit(TokenListenerEvent.onTokenTransitNonDeterministic, tokenId, tokenInstance, event, nextState);
             nextState = altStateTable(tokenId, tokenInstance, event);
         }
         if (!nextState) {
+            this._listener?.emit(TokenListenerEvent.onTokenInvalidStateChange, tokenId, tokenInstance, event);
             throw new Error(`Invalid${tableType}StateChange:- tokenId:${tokenId} currentState:${tokenInstance.stateName}[${tokenInstance.stateId}] onEvent:${onEvent}`);
+        }
+
+        if (tokenInstance.equals(nextState)) {
+            this._listener?.emit(TokenListenerEvent.onTokenTransitSelf, tokenId, tokenInstance, event, nextState);
+        } else {
+            this._listener?.emit(nextState.isFinalState() ? TokenListenerEvent.onTokenStateFinal : TokenListenerEvent.onTokenTransitState, tokenId, tokenInstance, event, nextState);
         }
         this._tokenInstances.set(tokenId, nextState);
         return nextState;
+    }
+
+    get internalListener() {
+        return this._internalListener;
+    }
+
+    get listener() {
+        return this._listener || (this._listener = new EventEmitter());
+    }
+
+    set listener(newListener: EventEmitter) {
+        this._listener = newListener;
     }
 
     toString() {
