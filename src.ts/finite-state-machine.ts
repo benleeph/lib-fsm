@@ -8,11 +8,14 @@ export interface FSMListener {
     onEventAfterFinalState(fsmName: string, onEvent: FsmEvent, finalState: FsmState): void;
 }
 
+export type NonDeterministicStateTable = (tokenId: string, currentState: FsmState, onEvent: FsmEvent) => FsmState | null;
+
 export class FiniteStateMachine {
 
     private readonly _states = new Map<number, FsmState>();
     private readonly _events = new Map<number, FsmEvent>();
     private readonly _initialStates = new Map<string, FsmState>();
+    private readonly _tokenInstances = new Map<string, FsmState>();
     private _allowSelfTransition = true;
 
     static createNewFiniteStateMachine(fsmName: string): FiniteStateMachine {
@@ -134,7 +137,6 @@ export class FiniteStateMachine {
             if (typeof event === "number") {
                 const eventObj = this._events.get(event) || null;
                 return (eventObj && eventObj.eventName === eventName) ? eventObj : null;
-
             } else {
                 return null;
             }
@@ -268,6 +270,58 @@ export class FiniteStateMachine {
             allStateTables += `${separator}${state.getStateTableString(separator)}`;
         });
         return allStateTables;
+    }
+
+    createTokenInstance(tokenId: string, fsmRegionName?: string): FsmState {
+        if (!tokenId?.trim()) {
+            throw new Error('Invalid action: invalid tokenId');
+        }
+        if (this._tokenInstances.has(tokenId)) {
+            throw new Error(`Invalid action: token instance ${tokenId} exists`);
+        }
+        const token = this.getInitialState(fsmRegionName);
+        if (!token) {
+            throw new Error(`No initial state for ${fsmRegionName ?? this._name}`);
+        }
+        this._tokenInstances.set(tokenId, token);
+        return token;
+    }
+
+    getTokenInstance(tokenId: string, autoCreate = true, fsmRegionName?: string): FsmState {
+        if (!tokenId?.trim()) {
+            throw new Error('Invalid action: invalid tokenId');
+        }
+        let token = this._tokenInstances.get(tokenId) || null;
+        if (!token) {
+            if (!autoCreate) {
+                throw new Error(`Token instance ${tokenId} not exists`);
+            }
+            token = this.createTokenInstance(tokenId, fsmRegionName);
+        }
+        return token;
+    }
+
+    updateTokenToNextState(tokenId: string, onEvent: FsmEvent | number | string, altStateTable?: NonDeterministicStateTable): FsmState {
+        const tokenInstance = this.getTokenInstance(tokenId);
+        const event = onEvent instanceof FsmEvent ? onEvent : this.getEvent(onEvent);
+        if (!event) {
+            throw new Error('Invalid action: invalid onEvent');
+        }
+
+        let tableType = '';
+        let nextState = this.nextState(tokenInstance, event);
+        if (nextState && !nextState.isDeterministic()) {
+            tableType = 'ND';
+            if (!altStateTable) {
+                throw new Error(`Invalid${tableType}StateTable:- tokenId:${tokenId} currentState:${tokenInstance.stateName}[${tokenInstance.stateId}] onEvent:${onEvent}`);
+            }
+            nextState = altStateTable(tokenId, tokenInstance, event);
+        }
+        if (!nextState) {
+            throw new Error(`Invalid${tableType}StateChange:- tokenId:${tokenId} currentState:${tokenInstance.stateName}[${tokenInstance.stateId}] onEvent:${onEvent}`);
+        }
+        this._tokenInstances.set(tokenId, nextState);
+        return nextState;
     }
 
     toString() {
