@@ -5,7 +5,11 @@ export class FsmState {
     private _initialStateRegionName: string | null = null;
     private _transitionTable: Map<FsmEvent, FsmState> | null = null;
 
-    constructor(private readonly _fsmName: string, private readonly _stateId: number, private readonly _stateName: string, private readonly _isFinalState: boolean = false) {
+    constructor(private readonly _fsmName: string,
+        private readonly _stateId: number,
+        private readonly _stateName: string,
+        private readonly _isFinalState: boolean = false,
+        private _isDeterministic: boolean = true) {
         this._transitionTable = this._isFinalState ? null : new Map<FsmEvent, FsmState>();
     }
 
@@ -43,8 +47,22 @@ export class FsmState {
         return this;
     }
 
+    markDeterministic() {
+        this._isDeterministic = true;
+        return this;
+    }
+
+    markUndeterministic() {
+        this._isDeterministic = false;
+        return this;
+    }
+
     isInitialState() {
         return (this._initialStateRegionName && this._initialStateRegionName.length > 0);
+    }
+
+    isDeterministic() {
+        return this._isDeterministic;
     }
 
     get initialStateRegionName() {
