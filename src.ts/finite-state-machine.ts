@@ -331,7 +331,7 @@ export class FiniteStateMachine {
                 this._listener?.emit(TokenListenerEvent.onErrorTokenIdNotFound, tokenId);
                 throw new Error(`Token instance ${tokenId} not exists`);
             }
-            token = this.createTokenInstance(tokenId, fsmRegionName);
+            token = this.createTokenInstance(tokenId, false, fsmRegionName);
         }
         return token;
     }
