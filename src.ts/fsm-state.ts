@@ -9,14 +9,15 @@ export class FsmState {
 
     private _initialStateRegionName: string | null = null;
     private _transitionTable: Map<FsmEvent, FsmState> | null = null;
+    private _outputTable: Map<FsmEvent, OutputFunction | null> | null = null;
 
     constructor(private readonly _fsmName: string,
         private readonly _stateId: number,
         private readonly _stateName: string,
         private readonly _isFinalState: boolean = false,
-        private _isDeterministic: boolean = true,
-        private _output?: OutputFunction) {
+        private _isDeterministic: boolean = true) {
         this._transitionTable = this._isFinalState ? null : new Map<FsmEvent, FsmState>();
+        this._outputTable = this._isFinalState ? null : new Map<FsmEvent, OutputFunction>();
     }
 
     get fsmName() {
@@ -79,26 +80,22 @@ export class FsmState {
         return (this._isFinalState || !this._transitionTable || this._transitionTable.size === 0);
     }
 
-    setOutputFunction(output: OutputFunction) {
-        this._output = output;
-        return this;
-    }
-
-    executeOutput(input?: FsmEvent): void {
-        if (typeof this._output === "undefined" || this._output == null) {
+    executeOutput(input: FsmEvent): void {
+        const nextOutput = this.nextOutput(input);
+        if (typeof nextOutput === "undefined" || nextOutput == null) {
             return;
         }
-        if (this._output.length === 0) {
-            (this._output as GeneralFunction)();
-        } else if (this._output.length === 1) {
-            (this._output as MooreFunction)(this);
-        } else if (this._output.length === 2 && input != null) {
-            (this._output as MealyFunction)(this, input);
+        if (nextOutput.length === 0) {
+            (nextOutput as GeneralFunction)();
+        } else if (nextOutput.length === 1) {
+            (nextOutput as MooreFunction)(this);
+        } else if (nextOutput.length === 2 && input != null) {
+            (nextOutput as MealyFunction)(this, input);
         }
         return;
     }
 
-    addTransition(onEvent: FsmEvent | null, nextState: FsmState | null) {
+    addTransition(onEvent: FsmEvent | null, nextState: FsmState | null, output?: OutputFunction) {
         if (this._isFinalState || !this._transitionTable) {
             throw new Error(`Invalid action: cannot add transition to final state: ${this.toString()}`);
         }
@@ -120,6 +117,7 @@ export class FsmState {
         }
 
         this._transitionTable.set(onEvent, nextState);
+        this._outputTable?.set(onEvent, output || null);
         return this;
     }
 
@@ -145,8 +143,13 @@ export class FsmState {
     }
 
     nextState(onEvent: FsmEvent): FsmState | null {
-        if (this._isFinalState || !this._transitionTable) { return null; }
+        if (this._isFinalState || !this._transitionTable || !onEvent) { return null; }
         return this._transitionTable.get(onEvent) || null;
+    }
+
+    nextOutput(onEvent: FsmEvent): OutputFunction | null {
+        if (this._isFinalState || !this._outputTable || !onEvent) { return null; }
+        return this._outputTable.get(onEvent) || null;
     }
 
     hasNextStateOnEvent(onEvent: FsmEvent, nextState: FsmState) {

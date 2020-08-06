@@ -1,7 +1,35 @@
-import { FiniteStateMachine, FsmState, FsmEvent } from "../src.ts";
+import { FiniteStateMachine, FsmState, FsmEvent, FsmListenerEvent, TokenListenerEvent } from "../src.ts";
 
 
 const fsm = FiniteStateMachine.createNewFiniteStateMachine('trafficLight');
+
+fsm.internalListener.on(FsmListenerEvent.onNewStateAdded, newState => {
+    console.log(`newState added: ${newState}`);
+});
+
+fsm.internalListener.on(FsmListenerEvent.onNewEventAdded, newEvent => {
+    console.log(`newEvent added: ${newEvent}`);
+});
+
+fsm.listener.on(TokenListenerEvent.onTokenCreated, (tokenId, token) => {
+    console.log(`tokenId:${tokenId} created ==> ${token}`);
+});
+
+fsm.listener.on(TokenListenerEvent.onTokenInvalidStateChange, (tokenId, token, onEvent) => {
+    console.log(`InvalidStateChange: tokenId:${tokenId} currentState ==> ${token} event:${onEvent}`);
+});
+
+fsm.listener.on(TokenListenerEvent.onTokenInvalidOutputResult, (tokenId, token, onEvent) => {
+    console.log(`InvalidOutputResult: tokenId:${tokenId} currentState ==> ${token} event:${onEvent}`);
+});
+
+fsm.listener.on(TokenListenerEvent.onTokenTransitState, (tokenId, token, onEvent, nextState) => {
+    console.log(`StateChanged: tokenId:${tokenId} currentState ==> ${token} event:${onEvent} nextState:${nextState}`);
+});
+
+fsm.listener.on(TokenListenerEvent.onTokenTransitFinalState, (tokenId, token, onEvent, nextState) => {
+    console.log(`FinalState: tokenId:${tokenId} currentState ==> ${token} event:${onEvent} nextState:${nextState}`);
+});
 
 const showTrafficLight = function (traffic: FsmState | null, onEvent: FsmEvent | null = null): FsmState | null {
     if (!traffic) { return null };
@@ -33,7 +61,11 @@ const veryLongTime = fsm.addEvent('Secs_600', 600);
 
 fsm.getState('Red')
     ?.addTransition(fsm.getEvent('NoCar'), greenLight)
-    ?.addTransition(fsm.getEvent('Secs_60'), greenLight)
+    ?.addTransition(fsm.getEvent('Secs_60'), greenLight, () => {
+        const light = fsm.getTokenInstance('trafficLight');
+        console.log(`\t${light} beeping`);
+        //throw new Error('traffic light breakdown');
+    })
     ?.addTransition(fsm.getEvent('Secs_600'), damaged)
     ;
 
@@ -55,7 +87,7 @@ console.log('\n*** Printing FSM');
 console.log(fsm.toString());
 
 // run the traffic light
-console.log('*** Running FSM');
+console.log('*** Running FSM v1.0');
 let trafficLight = fsm.getInitialState();
 trafficLight = showTrafficLight(trafficLight);
 trafficLight = showTrafficLight(trafficLight, fsm.getEvent(0));
@@ -70,5 +102,16 @@ trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_600'));
 trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_600'));
 trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_600'));
 trafficLight = showTrafficLight(trafficLight, fsm.getEvent('Secs_600'));
+
+console.log('\n\n*** Running FSM v1.1');
+fsm.createTokenInstance('trafficLight');
+try {
+    fsm.updateTokenToNextState('trafficLight', fsm.getEvent('Secs_60'));
+    fsm.updateTokenToNextState('trafficLight', fsm.getEvent('Secs_90'));
+    fsm.updateTokenToNextState('trafficLight', fsm.getEvent('Secs_10'));
+} catch (error) {
+    const currentState = fsm.getTokenInstance('trafficLight');
+    console.log(`Error found, currentState is ${currentState}`);
+}
 
 console.log('\n\nTerminating Traffic Light FSM');

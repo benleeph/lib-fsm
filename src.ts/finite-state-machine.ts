@@ -18,10 +18,11 @@ export enum FsmListenerEvent {
 export enum TokenListenerEvent {
     onTokenCreated = 'token.new',
     onTokenTransitNonDeterministic = 'token.transit.nd',
-    onTokenTransitSelf = 'token.state.changed.self',
     onTokenTransitState = 'token.state.changed',
-    onTokenStateFinal = 'token.state.final',
-    onTokenInvalidStateChange = 'token.state.invalid.change',
+    onTokenTransitSelf = 'token.state.changed.self',
+    onTokenTransitFinalState = 'token.state.changed.final',
+    onTokenInvalidStateChange = 'token.state.change.invalid',
+    onTokenInvalidOutputResult = 'token.output.result.error',
     onErrorTokenIdNotFound = 'error.notfound.tokenid',
     onErrorStateNotFound = 'error.notfound.state',
     onErrorEventNotFound = 'error.notfound.event',
@@ -336,7 +337,10 @@ export class FiniteStateMachine {
         return token;
     }
 
-    updateTokenToNextState(tokenId: string, onEvent: FsmEvent | number | string, altStateTable?: NonDeterministicStateTable): FsmState {
+    updateTokenToNextState(tokenId: string, onEvent: FsmEvent | number | string | null, altStateTable?: NonDeterministicStateTable): FsmState {
+        if (onEvent == null) {
+            throw new Error('Invalid action: missing onEvent');
+        }
         const tokenInstance = this.getTokenInstance(tokenId);
         const event = onEvent instanceof FsmEvent ? onEvent : this.getEvent(onEvent);
         if (!event) {
@@ -360,15 +364,17 @@ export class FiniteStateMachine {
             throw new Error(`Invalid${tableType}StateChange:- tokenId:${tokenId} currentState:${tokenInstance.stateName}[${tokenInstance.stateId}] onEvent:${onEvent}`);
         }
 
-        if (tokenInstance.equals(nextState)) {
-            this._listener?.emit(TokenListenerEvent.onTokenTransitSelf, tokenId, tokenInstance, event, nextState);
-        } else {
-            this._listener?.emit(nextState.isFinalState() ? TokenListenerEvent.onTokenStateFinal : TokenListenerEvent.onTokenTransitState, tokenId, tokenInstance, event, nextState);
-        }
         try {
-            tokenInstance.executeOutput(event);
             this._tokenInstances.set(tokenId, nextState);
+            tokenInstance.executeOutput(event);
+            if (tokenInstance.equals(nextState)) {
+                this._listener?.emit(TokenListenerEvent.onTokenTransitSelf, tokenId, tokenInstance, event, nextState);
+            } else {
+                this._listener?.emit(nextState.isFinalState() ? TokenListenerEvent.onTokenTransitFinalState : TokenListenerEvent.onTokenTransitState, tokenId, tokenInstance, event, nextState);
+            }
         } catch (error) {
+            this._tokenInstances.set(tokenId, tokenInstance);
+            this._listener?.emit(TokenListenerEvent.onTokenInvalidOutputResult, tokenId, tokenInstance, event);
             throw error;
         }
         return nextState;
