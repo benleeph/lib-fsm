@@ -365,8 +365,12 @@ export class FiniteStateMachine {
         } else {
             this._listener?.emit(nextState.isFinalState() ? TokenListenerEvent.onTokenStateFinal : TokenListenerEvent.onTokenTransitState, tokenId, tokenInstance, event, nextState);
         }
-        this._tokenInstances.set(tokenId, nextState);
-        tokenInstance.executeOutput(event);
+        try {
+            tokenInstance.executeOutput(event);
+            this._tokenInstances.set(tokenId, nextState);
+        } catch (error) {
+            throw error;
+        }
         return nextState;
     }
 
