@@ -14,17 +14,16 @@
     "version-patch": "npm version patch",
     "version-minor": "npm version minor",
     "version-major": "npm version major",
-    "clean": "rm -rf ./dist",
-    "testdev:build": "tsc -w",
-    "testdev:run": "nodemon dist/test/index.js",
-    "testdev": "concurrently npm:testdev:*"
+    "clean": "rm -rf ./dist"
   },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/benleeph/lib-fsm.git"
   },
   "keywords": [
-    "fsm"
+    "fsm",
+    "moore",
+    "mealy"
   ],
   "author": "Benjamin Lee <benlee.poh.huat@gmail.com>",
   "license": "MIT",
