@@ -374,6 +374,21 @@ export class FiniteStateMachine {
         return nextState;
     }
 
+    pruneTokenInstances(ignoreList?: Set<string>): number {
+        let nDeleted = 0 | 0;
+        for (const [tokenId, tokenInstance] of this._tokenInstances.entries()) {
+            if (ignoreList?.has(tokenId)) {
+                continue;
+            }
+            if (tokenInstance.isFinalState()) {
+                if (this._tokenInstances.delete(tokenId)) {
+                    ++nDeleted;
+                }
+            }
+        }
+        return nDeleted;
+    }
+
     get internalListener() {
         return this._internalListener;
     }
