@@ -304,11 +304,11 @@ export class FiniteStateMachine {
         return allStateTables;
     }
 
-    createTokenInstance(tokenId: string, fsmRegionName?: string): FsmState {
+    createTokenInstance(tokenId: string, reset: boolean = false, fsmRegionName?: string): FsmState {
         if (!tokenId?.trim()) {
             throw new Error('Invalid action: invalid tokenId');
         }
-        if (this._tokenInstances.has(tokenId)) {
+        if (!reset && this._tokenInstances.has(tokenId)) {
             throw new Error(`Invalid action: token instance ${tokenId} exists`);
         }
         const token = this.getInitialState(fsmRegionName);
